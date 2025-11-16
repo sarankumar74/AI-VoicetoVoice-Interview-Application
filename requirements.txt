@@ -1,0 +1,15 @@
+fastapi
+uvicorn
+python-multipart
+pydantic
+python-dotenv
+google-generativeai
+streamlit
+gTTS
+google-genai
+plotly
+pandas
+numpy
+python-magic
+PyPDF2
+python-docx
