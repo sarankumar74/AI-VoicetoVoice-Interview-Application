@@ -1,8 +1,9 @@
 # Interview Analyzer: Real-Time Conversation Analyzer
 
 ![Streamlit](https://img.shields.io/badge/Python-3.x-blue?logo=python&logoColor=white)
-![Google Gemini API](https://img.shields.io/badge/Database-MySQL-orange?logo=mysql&logoColor=white)
+![Google Gemini API](https://img.shields.io/badge/google-gemini?logo=mysql&logoColor=white)
 ![API Handling](https://img.shields.io/badge/Process-API%20Handling-brightgreen)
+![Streamlit](https://img.shields.io/badge/Framework-Streamlit-red?logo=streamlit)
 ![Domain](https://img.shields.io/badge/AI-Interview%2C%HR%2C%Buissnes-Purpose)
 
 ---
