@@ -3,8 +3,8 @@ uvicorn
 python-multipart
 pydantic
 python-dotenv
-google-generativeai
 streamlit
+google-generativeai
 gTTS
 google-genai
 plotly
