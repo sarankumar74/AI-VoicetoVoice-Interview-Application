@@ -156,6 +156,9 @@ for key in ["started","history","finished","tone","current_question","transcript
 # PAGE NAVIGATION
 # ============================
 page = st.sidebar.radio("Navigate Pages", ["Voice Interview", "📊 Interview Analysis"])
+
+st.sidebar.write("This API Key : 'AIzaSyBl79ucqcFpALPspGWtftOxeecqpg8t3ZA'")
+
 # ============================
 # PRE-INTERVIEW SETUP
 # ============================
