@@ -1,4 +1,4 @@
-import os
+import os 
 import io
 import json
 import re
@@ -148,9 +148,9 @@ api_key = st.sidebar.text_input("Gemini API Key", type="password")
 
 # Initialize session state
 for key in ["started","history","finished","tone","current_question","transcript",
-            "interview_type","candidate_name","candidate_experience","resume_file"]:
+            "interview_type","candidate_name","candidate_experience","resume_file","interview_level","analysis"]:
     if key not in st.session_state:
-        st.session_state[key] = "" if key in ["current_question","transcript","tone","interview_type","candidate_name","candidate_experience"] else [] if key=="history" else False
+        st.session_state[key] = "" if key in ["current_question","transcript","tone","interview_type","candidate_name","candidate_experience","interview_level"] else [] if key=="history" else False
 
 # ============================
 # PAGE NAVIGATION
@@ -162,34 +162,32 @@ st.sidebar.write("This API Key : 'AIzaSyBl79ucqcFpALPspGWtftOxeecqpg8t3ZA'")
 # ============================
 # PRE-INTERVIEW SETUP
 # ============================
-
 if not st.session_state.started and page=="Voice Interview":
-    st.subheader("📝 Requirements Details")
-    with st.container():
-        col1, col2 = st.columns(2)
-        with col1:
-            st.session_state.candidate_name = st.text_input("Candidate Name")
-            st.session_state.interview_type = st.selectbox(
-                "Interview Domain", 
-                ["General", "Technical", "HR/Behavioral", "Managerial", "Group Discussion"]
-            )
-            st.session_state.candidate_experience = st.selectbox(
-                "Candidate Experience Level", 
-                ["Fresher", "Experienced"]
-            )
-            st.session_state.interview_level = st.selectbox(
-                "Interview Level",
-                ["Beginner", "Intermediate", "Advanced"]
-            )
-        with col2:
-            st.session_state.tone = st.selectbox(
-                "Feedback Tone", 
-                ["Professional", "Encouraging", "Friendly", "Critical"]
-            )
-            st.session_state.resume_file = st.file_uploader(
-                "Upload your Resume (PDF/DOCX)", 
-                type=["pdf","docx"]
-            )
+    st.subheader("📝 Candidate Details")
+    col1, col2 = st.columns(2)
+    with col1:
+        st.session_state.candidate_name = st.text_input("Candidate Name")
+        st.session_state.interview_type = st.selectbox(
+            "Interview Domain", 
+            ["General", "Technical", "HR/Behavioral", "Managerial", "Group Discussion"]
+        )
+        st.session_state.candidate_experience = st.selectbox(
+            "Candidate Experience Level", 
+            ["Fresher", "Experienced"]
+        )
+        st.session_state.interview_level = st.selectbox(
+            "Interview Level",
+            ["Beginner", "Intermediate", "Advanced"]
+        )
+    with col2:
+        st.session_state.tone = st.selectbox(
+            "Feedback Tone", 
+            ["Professional", "Encouraging", "Friendly", "Critical"]
+        )
+        st.session_state.resume_file = st.file_uploader(
+            "Upload Resume (PDF/DOCX)", 
+            type=["pdf","docx"]
+        )
 
     if st.button("🚀 Start Interview"):
         if not api_key:
@@ -203,89 +201,120 @@ if not st.session_state.started and page=="Voice Interview":
             st.session_state.started = True
             st.session_state.history = [{"role":"ai","text": intro_text}]
             st.session_state.current_question = intro_text
+            st.session_state.analysis = {"total_score":70,"communication_score":70}
             st.rerun()
     st.stop()
 
 # ============================
 # CLIENT
 # ============================
-if api_key:
-    client = get_client(api_key)
-else:
-    client = None
+client = get_client(api_key) if api_key else None
 
 # ============================
-# VOICE INTERVIEW PAGE
+# VOICE INTERVIEW PAGE (Creative UX/UI)
 # ============================
 if page=="Voice Interview":
-    
     col1, col2 = st.columns([2,1])
+    
     with col1:
         st.subheader("🤝 Conversation")
-        chat_container = st.container()
         for idx, m in enumerate(st.session_state.history):
             is_ai = m['role'] == 'ai'
             timestamp = datetime.now().strftime("%H:%M")
-            col_left, col_right = st.columns([3,1]) if is_ai else st.columns([1,3])
-            with col_left if is_ai else col_right:
-                bubble_color = "#d9f7ff" if is_ai else "#fff0d6"
-                st.markdown(f"<div style='background:{bubble_color}; padding:10px; border-radius:12px; margin-bottom:5px;'>"
-                            f"<b>{'AI' if is_ai else 'You'}</b> <span style='font-size:10px; color:gray'>{timestamp}</span><br>"
-                            f"{m['text']}</div>", unsafe_allow_html=True)
-                if is_ai:
-                    st.audio(gtts_cached(m['text']))
-                elif 'audio_bytes' in m:
-                    st.audio(m['audio_bytes'])
+            bubble_color = "#d9f7ff" if is_ai else "#fff0d6"
+            
+            # Highlight user strengths vs weaknesses
+            if m['role'] == 'user' and st.session_state.analysis:
+                score = st.session_state.analysis.get("communication_score", 70)
+                if score >= 80:
+                    bubble_color = "#c6f6d5"  # green
+                elif score < 60:
+                    bubble_color = "#fed7d7"  # red
 
+            st.markdown(
+                f"<div style='background:{bubble_color}; padding:10px; border-radius:12px; margin-bottom:5px;'>"
+                f"<b>{'AI' if is_ai else 'You'}</b> <span style='font-size:10px; color:gray'>{timestamp}</span><br>"
+                f"{m['text']}</div>",
+                unsafe_allow_html=True
+            )
+
+            if is_ai:
+                st.audio(gtts_cached(m['text']))
+            elif 'audio_bytes' in m:
+                st.audio(m['audio_bytes'])
+    
+    
     with col2:
         st.subheader("📷 Web Controls")
-        st.camera_input("Enable your camera (optional)")
-        if st.session_state.current_question:
-            st.markdown(f"**Current Question:** {st.session_state.current_question}")
-            st.audio(gtts_cached(st.session_state.current_question))
+        cam_image = st.camera_input("Enable your camera (optional)")
+        if cam_image:
+            st.image(cam_image, caption="Your Camera Preview", use_column_width=True)
+            st.info("😊 Emotion: Neutral (placeholder for AI analysis)")
 
-        audio_file = st.audio_input("Record your answer")
-        col_send, col_finish = st.columns(2)
-        with col_send:
-            if st.button("📤 Send") and audio_file and client:
-                # ===== FIXED READ ISSUE =====
-                audio_file_bytes = audio_file.read()  # read once
-                transcript, reply = interview_turn(client, audio_file_bytes, st.session_state.history)
-                st.session_state.history.append({"role":"user","text": transcript, "audio_bytes": audio_file_bytes})
-                st.session_state.history.append({"role":"ai","text": reply})
-                st.session_state.current_question = reply
-                st.rerun()
-        with col_finish:
-            if st.button("🏁 End  Interview"):
-                st.session_state.finished = True
-                st.rerun()
+    # ============================
+    # Voice Input Section
+    # ============================
+    st.markdown("<h3 style='text-align:center;'> Record & Send Your Answer</h3>", unsafe_allow_html=True)
+    col_l, col_c, col_r = st.columns([1,2,1])
+    
+    with col_c:
+        voice_input = st.audio_input("Record your answer")
+        if voice_input:
+            audio_bytes = voice_input.read()
+            st.audio(audio_bytes)
+            
+            c1, c2 = st.columns([1,1])
+            with c1:
+                if st.button("📤 Send Answer") and client:
+                    transcript, reply = interview_turn(client, audio_bytes, st.session_state.history)
+                    st.session_state.history.append({"role":"user","text": transcript, "audio_bytes": audio_bytes})
+                    st.session_state.history.append({"role":"ai","text": reply})
+                    st.session_state.current_question = reply
+                    st.session_state.analysis = ai_interview_analysis(client, st.session_state.history, st.session_state.tone)
+                    st.success("Answer sent! Updated scores displayed above.")
+                    st.rerun()
+            with c2:
+                if st.button("🏁 End Interview"):
+                    st.session_state.finished = True
+                    st.success("View Interview Analysis Report!")
+                    st.rerun()
 
 # ============================
 # INTERVIEW ANALYSIS PAGE
 # ============================
 if page=="📊 Interview Analysis" and st.session_state.finished and client:
     st.header("📊 Interview Analysis")
-    analysis = ai_interview_analysis(client, st.session_state.history, st.session_state.tone)
+    analysis = st.session_state.analysis
 
+    # ---- Sentiment Tone ----
+    sentiment = analysis.get("sentiment", "Neutral")
+    sentiment_icon = "😐 Neutral"
+    if sentiment.lower() in ["positive","happy","encouraging"]:
+        sentiment_icon = "😊 Positive"
+    elif sentiment.lower() in ["negative","angry","critical"]:
+        sentiment_icon = "😞 Negative"
+    st.subheader(f"📝 Sentiment Tone: {sentiment_icon}")
+
+    # Tabs
     tabs = st.tabs(["Scores","Feedback","Charts","Voice Transcript Replay","Insights & Suggestions"])
-
+    
     with tabs[0]:
         st.subheader("🧮 Scores")
         colA, colB, colC = st.columns(3)
-        colA.metric("Total Score", analysis["total_score"])
-        colB.metric("Communication Score", analysis["communication_score"])
-        colC.metric("Communication Level", analysis["communication_level"])
+        colA.metric("Total Score", analysis.get("total_score", 0))
+        colB.metric("Communication Score", analysis.get("communication_score", 0))
+        colC.metric("Communication Level", analysis.get("communication_level", "Average"))
 
     with tabs[1]:
         st.subheader("📝 Feedback & Details")
         with st.expander("Feedback"):
-            st.write(analysis["feedback"])
+            st.write(analysis.get("feedback", "No feedback"))
         with st.expander("Mistakes"):
-            st.write(", ".join(analysis["mistakes"]))
+            st.write(", ".join(analysis.get("mistakes", [])))
         with st.expander("Correct Answers"):
-            st.write(", ".join(analysis["correct_answers"]))
+            st.write(", ".join(analysis.get("correct_answers", [])))
         with st.expander("Topics Covered"):
-            st.write(", ".join(analysis["topics_covered"]))
+            st.write(", ".join(analysis.get("topics_covered", [])))
 
     with tabs[2]:
         st.subheader("📈 Charts")
@@ -323,9 +352,11 @@ if page=="📊 Interview Analysis" and st.session_state.finished and client:
                     st.audio(m['audio_bytes'])
                 st.markdown(f"**Insight:** Shows strengths and areas for improvement.")
 
-    pdf_content = "=== INTERVIEW TRANSCRIPT ===\n\n"
+    # ---- REPORT DOWNLOAD ----
+    report_text = "=== INTERVIEW TRANSCRIPT ===\n\n"
     for m in st.session_state.history:
         role = "AI" if m['role']=='ai' else "Candidate"
-        pdf_content += f"{role}: {m['text']}\n"
-    pdf_content += "\n\n=== ANALYSIS ===\n" + json.dumps(analysis, indent=2)
-    st.download_button("📄 Download Report", pdf_content, "interview_analysis.txt")
+        report_text += f"{role}: {m['text']}\n"
+    report_text += "\n\n=== ANALYSIS ===\n" + json.dumps(analysis, indent=2)
+    st.download_button("📄 Download TXT Report", report_text, "interview_report.txt")
+
